@@ -1,0 +1,40 @@
+# ─── Entorno Virtual ──────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ─── Variables de Entorno (NUNCA subir a GitHub) ──────────
+.env
+.env.*
+!.env.example
+
+# ─── Python ───────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+# ─── Logs ─────────────────────────────────────────────────
+*.log
+logs/
+
+# ─── Tests y Cobertura ────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# ─── Editor / IDE ─────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*.DS_Store
+Thumbs.db
+
+# ─── Build / Distribución ─────────────────────────────────
+dist/
+build/
+*.egg-info/

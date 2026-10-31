@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SportsHub - Marcadores y Resultados en Vivo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            brand: { 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' },
+            darkbg: '#0B0F17',
+            cardbg: '#161F30',
+            bordercol: '#23324D'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0B0F17; color: #F3F4F6; font-family: 'Inter', sans-serif; }
+    .badge-live { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <!-- Header / Navigation -->
+  <header class="border-b border-[#23324D] bg-[#111827]/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+          <span class="text-xl">🏆</span>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            SportsHub API
+            <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 font-medium">FastAPI v1.0</span>
+          </h1>
+          <p class="text-xs text-gray-400">Los 5 deportes más vistos del mundo en tiempo real</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button id="refreshBtn" onclick="fetchCurrentTab(true)" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 transition">
+          <svg id="refreshIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          Actualizar
+        </button>
+        <a href="/docs" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-500 text-white shadow transition">
+          <span>Swagger Docs</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Sports Tab Nav -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-1 overflow-x-auto pb-2 scrollbar-none">
+      <button onclick="setSport('summary')" id="tab-summary" class="tab-btn px-4 py-2 text-sm font-semibold rounded-lg text-white bg-blue-600 transition flex items-center gap-2">
+        <span>🌐</span> Resumen General
+      </button>
+      <button onclick="setSport('soccer')" id="tab-soccer" class="tab-btn px-4 py-2 text-sm font-medium rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition flex items-center gap-2">
+        <span>⚽</span> Fútbol (Top 5)
+      </button>
+      <button onclick="setSport('mlb')" id="tab-mlb" class="tab-btn px-4 py-2 text-sm font-medium rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition flex items-center gap-2">
+        <span>⚾</span> MLB (Béisbol)
+      </button>
+      <button onclick="setSport('ufc')" id="tab-ufc" class="tab-btn px-4 py-2 text-sm font-medium rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition flex items-center gap-2">
+        <span>🥊</span> UFC (MMA)
+      </button>
+      <button onclick="setSport('nba')" id="tab-nba" class="tab-btn px-4 py-2 text-sm font-medium rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition flex items-center gap-2">
+        <span>🏀</span> NBA (Baloncesto)
+      </button>
+      <button onclick="setSport('nfl')" id="tab-nfl" class="tab-btn px-4 py-2 text-sm font-medium rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition flex items-center gap-2">
+        <span>🏈</span> NFL (Americano)
+      </button>
+    </div>
+  </header>
+
+  <!-- Sub-bar for Soccer leagues (Visible only when Soccer tab is active) -->
+  <div id="soccerSubNav" class="hidden bg-[#161F30]/90 border-b border-[#23324D] px-4 py-2">
+    <div class="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto text-xs">
+      <span class="text-gray-400 font-medium mr-2">Top 5 Ligas:</span>
+      <button onclick="setSoccerLeague('all')" id="sec-all" class="sec-btn px-2.5 py-1 rounded-md bg-blue-600 text-white font-medium">Todas</button>
+      <button onclick="setSoccerLeague('premier_league')" id="sec-premier_league" class="sec-btn px-2.5 py-1 rounded-md bg-gray-800 text-gray-300 hover:bg-gray-700">🇬🇧 Premier League</button>
+      <button onclick="setSoccerLeague('laliga')" id="sec-laliga" class="sec-btn px-2.5 py-1 rounded-md bg-gray-800 text-gray-300 hover:bg-gray-700">🇪🇸 LaLiga</button>
+      <button onclick="setSoccerLeague('serie_a')" id="sec-serie_a" class="sec-btn px-2.5 py-1 rounded-md bg-gray-800 text-gray-300 hover:bg-gray-700">🇮🇹 Serie A</button>
+      <button onclick="setSoccerLeague('bundesliga')" id="sec-bundesliga" class="sec-btn px-2.5 py-1 rounded-md bg-gray-800 text-gray-300 hover:bg-gray-700">🇩🇪 Bundesliga</button>
+      <button onclick="setSoccerLeague('ligue_1')" id="sec-ligue_1" class="sec-btn px-2.5 py-1 rounded-md bg-gray-800 text-gray-300 hover:bg-gray-700">🇫🇷 Ligue 1</button>
+    </div>
+  </div>
+
+  <!-- Main Content Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+    <!-- Status / Info Bar -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6 bg-[#161F30] border border-[#23324D] rounded-xl px-4 py-3">
+      <div class="flex items-center gap-3">
+        <span id="liveStatusBadge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 badge-live"></span>
+          Conectado
+        </span>
+        <span id="statsLabel" class="text-xs text-gray-300">Cargando datos deportivos...</span>
+      </div>
+      <div class="text-xs text-gray-400" id="lastUpdated">Actualizado: --:--:--</div>
+    </div>
+
+    <!-- Dynamic Content Area -->
+    <div id="contentGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <!-- Loading Skeleton -->
+      <div class="animate-pulse bg-[#161F30] border border-[#23324D] rounded-xl p-5 h-48"></div>
+      <div class="animate-pulse bg-[#161F30] border border-[#23324D] rounded-xl p-5 h-48"></div>
+      <div class="animate-pulse bg-[#161F30] border border-[#23324D] rounded-xl p-5 h-48"></div>
+    </div>
+  </main>
+
+  <footer class="border-t border-[#23324D] bg-[#0E1420] py-4 text-center text-xs text-gray-500">
+    API Deportiva en FastAPI • Diseñada para Portales Web Deportivos • Datos actualizados automáticamente
+  </footer>
+
+  <script>
+    let currentSport = 'summary';
+    let currentSoccerLeague = 'all';
+
+    function setSport(sport) {
+      currentSport = sport;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-blue-600', 'text-white');
+        btn.classList.add('text-gray-400', 'hover:bg-gray-800');
+      });
+      const activeBtn = document.getElementById(`tab-${sport}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('text-gray-400', 'hover:bg-gray-800');
+        activeBtn.classList.add('bg-blue-600', 'text-white');
+      }
+
+      const subNav = document.getElementById('soccerSubNav');
+      if (sport === 'soccer') {
+        subNav.classList.remove('hidden');
+      } else {
+        subNav.classList.add('hidden');
+      }
+
+      fetchCurrentTab();
+    }
+
+    function setSoccerLeague(league) {
+      currentSoccerLeague = league;
+      document.querySelectorAll('.sec-btn').forEach(btn => {
+        btn.classList.remove('bg-blue-600', 'text-white');
+        btn.classList.add('bg-gray-800', 'text-gray-300');
+      });
+      const activeBtn = document.getElementById(`sec-${league}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-gray-800', 'text-gray-300');
+        activeBtn.classList.add('bg-blue-600', 'text-white');
+      }
+      fetchCurrentTab();
+    }
+
+    async function fetchCurrentTab(forceRefresh = false) {
+      const grid = document.getElementById('contentGrid');
+      const statsLabel = document.getElementById('statsLabel');
+      const lastUpdated = document.getElementById('lastUpdated');
+      const refreshIcon = document.getElementById('refreshIcon');
+      
+      refreshIcon.classList.add('animate-spin');
+
+      try {
+        let url = '';
+        if (currentSport === 'summary') {
+          url = `/api/v1/summary?force_refresh=${forceRefresh}`;
+        } else if (currentSport === 'soccer') {
+          url = `/api/v1/soccer?league=${currentSoccerLeague}&force_refresh=${forceRefresh}`;
+        } else {
+          url = `/api/v1/${currentSport}?force_refresh=${forceRefresh}`;
+        }
+
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        lastUpdated.textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
+        refreshIcon.classList.remove('animate-spin');
+
+        if (currentSport === 'summary') {
+          renderSummary(data);
+        } else if (currentSport === 'ufc') {
+          renderUFC(data);
+        } else {
+          renderMatches(data);
+        }
+      } catch (err) {
+        console.error(err);
+        refreshIcon.classList.remove('animate-spin');
+        grid.innerHTML = `
+          <div class="col-span-full bg-red-950/40 border border-red-800 text-red-200 p-6 rounded-xl text-center">
+            <h3 class="text-base font-semibold mb-1">Error al conectar con la API deportiva</h3>
+            <p class="text-xs text-red-300">${err.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    function getStatusBadge(status) {
+      if (!status) return `<span class="text-gray-400 text-xs">Prog.</span>`;
+      if (status.state === 'in') {
+        return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40 badge-live">
+          <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> ${status.detail || 'EN VIVO'}
+        </span>`;
+      } else if (status.completed || status.state === 'post') {
+        return `<span class="px-2 py-0.5 rounded text-xs font-medium bg-gray-800 text-gray-300 border border-gray-700">Final</span>`;
+      } else {
+        return `<span class="px-2 py-0.5 rounded text-xs font-medium bg-blue-900/30 text-blue-300 border border-blue-700/40">${status.detail || 'Programado'}</span>`;
+      }
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      return isNaN(d.getTime()) ? '' : d.toLocaleDateString();
+    }
+
+    function renderMatches(data) {
+      const grid = document.getElementById('contentGrid');
+      const statsLabel = document.getElementById('statsLabel');
+      const events = data.events || [];
+      const leagueOrSport = data.league || (data.sport ? data.sport.toUpperCase() : 'DEPORTES');
+      statsLabel.textContent = `${leagueOrSport} — ${events.length} partidos encontrados`;
+
+      if (events.length === 0) {
+        grid.innerHTML = `<div class="col-span-full text-center py-12 text-gray-400">No hay partidos programados o recientes para la fecha seleccionada.</div>`;
+        return;
+      }
+
+      grid.innerHTML = events.map(m => {
+        const home = m.home_team || { name: 'Equipo Local', score: '-' };
+        const away = m.away_team || { name: 'Equipo Visitante', score: '-' };
+        const dateStr = formatDate(m.date);
+        const venueName = m.venue ? m.venue.name : '';
+        const venueCity = m.venue && m.venue.city ? `• ${m.venue.city}` : '';
+        const venueText = venueName ? `${venueName} ${venueCity}` : dateStr;
+
+        return `
+          <div class="bg-[#161F30] border border-[#23324D] rounded-xl p-4 hover:border-blue-500/40 transition shadow-lg flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-3 text-xs border-b border-gray-800/80 pb-2">
+                <span class="text-gray-400 font-medium truncate max-w-[60%]">${m.league_name || ''}</span>
+                ${getStatusBadge(m.status)}
+              </div>
+
+              <!-- Away Team -->
+              <div class="flex items-center justify-between py-2 border-b border-gray-800/40">
+                <div class="flex items-center gap-3">
+                  ${away.logo ? `<img src="${away.logo}" class="w-7 h-7 object-contain" alt="">` : `<div class="w-7 h-7 bg-gray-800 rounded-full flex items-center justify-center text-xs">🛡️</div>`}
+                  <div>
+                    <div class="font-semibold text-sm ${away.is_winner ? 'text-white' : 'text-gray-200'}">${away.name || 'Visitante'}</div>
+                    ${away.record ? `<div class="text-[11px] text-gray-400">${away.record}</div>` : ''}
+                  </div>
+                </div>
+                <div class="text-xl font-bold ${away.is_winner ? 'text-emerald-400' : 'text-white'}">${away.score ?? '-'}</div>
+              </div>
+
+              <!-- Home Team -->
+              <div class="flex items-center justify-between py-2">
+                <div class="flex items-center gap-3">
+                  ${home.logo ? `<img src="${home.logo}" class="w-7 h-7 object-contain" alt="">` : `<div class="w-7 h-7 bg-gray-800 rounded-full flex items-center justify-center text-xs">🛡️</div>`}
+                  <div>
+                    <div class="font-semibold text-sm ${home.is_winner ? 'text-white' : 'text-gray-200'}">${home.name || 'Local'}</div>
+                    ${home.record ? `<div class="text-[11px] text-gray-400">${home.record}</div>` : ''}
+                  </div>
+                </div>
+                <div class="text-xl font-bold ${home.is_winner ? 'text-emerald-400' : 'text-white'}">${home.score ?? '-'}</div>
+              </div>
+            </div>
+
+            <!-- Footer Details -->
+            <div class="mt-4 pt-2.5 border-t border-gray-800 text-[11px] text-gray-400 flex items-center justify-between">
+              <span class="truncate max-w-[70%]">${venueText}</span>
+              ${m.broadcasts && m.broadcasts.length ? `<span class="bg-gray-800 px-2 py-0.5 rounded text-[10px] text-gray-300">${m.broadcasts[0]}</span>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderUFC(data) {
+      const grid = document.getElementById('contentGrid');
+      const statsLabel = document.getElementById('statsLabel');
+      const events = data.events || [];
+      statsLabel.textContent = `UFC MMA — ${events.length} evento(s) cargado(s)`;
+
+      if (events.length === 0) {
+        grid.innerHTML = `<div class="col-span-full text-center py-12 text-gray-400">No hay eventos de UFC programados.</div>`;
+        return;
+      }
+
+      grid.innerHTML = events.map(card => {
+        const fights = card.fights || [];
+        const fightsHtml = fights.map(f => {
+          const f1 = f.fighter_1 || { name: 'Por confirmar' };
+          const f2 = f.fighter_2 || { name: 'Por confirmar' };
+          return `
+            <div class="py-2.5 border-b border-gray-800/60 last:border-0 text-xs">
+              <div class="flex items-center justify-between text-gray-400 mb-1.5 text-[11px]">
+                <span class="font-medium ${f.is_title_fight ? 'text-amber-400 font-bold' : ''}">
+                  ${f.is_title_fight ? '👑 ' : ''}${f.weight_class || 'Pelea'}
+                </span>
+                ${getStatusBadge(f.status)}
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="flex items-center gap-2 ${f1.is_winner ? 'text-emerald-400 font-bold' : 'text-gray-200'}">
+                  ${f1.headshot ? `<img src="${f1.headshot}" class="w-6 h-6 rounded-full object-cover">` : ''}
+                  <div class="truncate">
+                    <div>${f1.name}</div>
+                    <div class="text-[10px] text-gray-400">${f1.record || ''}</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 justify-end text-right ${f2.is_winner ? 'text-emerald-400 font-bold' : 'text-gray-200'}">
+                  <div class="truncate">
+                    <div>${f2.name}</div>
+                    <div class="text-[10px] text-gray-400">${f2.record || ''}</div>
+                  </div>
+                  ${f2.headshot ? `<img src="${f2.headshot}" class="w-6 h-6 rounded-full object-cover">` : ''}
+                </div>
+              </div>
+              ${f.winner_name ? `<div class="mt-1 text-[10px] text-emerald-400">🏆 Ganador: ${f.winner_name} ${f.method ? `(${f.method})` : ''}</div>` : ''}
+            </div>
+          `;
+        }).join('');
+
+        const venueStr = card.venue ? `${card.venue.name || ''} ${card.venue.city ? '• ' + card.venue.city : ''}` : '';
+
+        return `
+          <div class="col-span-full bg-[#161F30] border border-[#23324D] rounded-xl p-5 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-800 pb-3 mb-4">
+              <div>
+                <span class="text-xs px-2 py-0.5 rounded bg-red-600/20 text-red-400 font-bold border border-red-600/30">UFC EVENT</span>
+                <h2 class="text-lg font-bold text-white mt-1">${card.name}</h2>
+                <p class="text-xs text-gray-400">${venueStr}</p>
+              </div>
+              ${getStatusBadge(card.status)}
+            </div>
+
+            <div class="divide-y divide-gray-800/60">
+              ${fightsHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderSummary(data) {
+      const grid = document.getElementById('contentGrid');
+      const statsLabel = document.getElementById('statsLabel');
+      const totalEvents = (data.counts && data.counts.total !== undefined) ? data.counts.total : 0;
+      statsLabel.textContent = `Resumen General — ${totalEvents} eventos registrados en los 5 deportes`;
+
+      const sportsSections = [
+        { title: '⚽ Fútbol (Top 5 Ligas)', items: data.soccer || [] },
+        { title: '🏀 NBA (Baloncesto)', items: data.nba || [] },
+        { title: '🏈 NFL (Fútbol Americano)', items: data.nfl || [] },
+        { title: '⚾ MLB (Béisbol)', items: data.mlb || [] },
+      ];
+
+      let html = '';
+
+      sportsSections.forEach(section => {
+        if (section.items.length === 0) return;
+        const top3 = section.items.slice(0, 3);
+        html += `
+          <div class="bg-[#161F30] border border-[#23324D] rounded-xl p-4 shadow-lg">
+            <h3 class="text-sm font-bold text-white border-b border-gray-800 pb-2 mb-3 flex items-center justify-between">
+              <span>${section.title}</span>
+              <span class="text-xs font-normal text-gray-400">${section.items.length} totales</span>
+            </h3>
+            <div class="space-y-3">
+              ${top3.map(m => `
+                <div class="p-2.5 rounded-lg bg-[#0E1522] border border-gray-800/80 text-xs">
+                  <div class="flex items-center justify-between text-[11px] text-gray-400 mb-1">
+                    <span class="truncate">${m.league_name}</span>
+                    ${getStatusBadge(m.status)}
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      ${m.away_team.logo ? `<img src="${m.away_team.logo}" class="w-4 h-4 object-contain">` : ''}
+                      <span class="${m.away_team.is_winner ? 'text-white font-semibold' : 'text-gray-300'}">${m.away_team.short_name || m.away_team.name}</span>
+                    </div>
+                    <span class="font-bold text-white">${m.away_team.score}</span>
+                  </div>
+                  <div class="flex items-center justify-between mt-1">
+                    <div class="flex items-center gap-2">
+                      ${m.home_team.logo ? `<img src="${m.home_team.logo}" class="w-4 h-4 object-contain">` : ''}
+                      <span class="${m.home_team.is_winner ? 'text-white font-semibold' : 'text-gray-300'}">${m.home_team.short_name || m.home_team.name}</span>
+                    </div>
+                    <span class="font-bold text-white">${m.home_team.score}</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      });
+
+      if (data.ufc && data.ufc.length > 0) {
+        const ufcEvent = data.ufc[0];
+        html += `
+          <div class="bg-[#161F30] border border-[#23324D] rounded-xl p-4 shadow-lg">
+            <h3 class="text-sm font-bold text-white border-b border-gray-800 pb-2 mb-3 flex items-center justify-between">
+              <span>🥊 UFC (MMA)</span>
+              <span class="text-xs font-normal text-gray-400">${ufcEvent.total_fights} combates</span>
+            </h3>
+            <div class="text-xs font-semibold text-gray-200 mb-2 truncate">${ufcEvent.name}</div>
+            <div class="space-y-2">
+              ${ufcEvent.fights.slice(0, 3).map(f => `
+                <div class="p-2 rounded bg-[#0E1522] border border-gray-800 text-[11px]">
+                  <div class="text-gray-400 text-[10px] mb-1 flex justify-between">
+                    <span>${f.weight_class}</span>
+                    <span>${f.winner_name ? 'Ganador: ' + f.winner_name : ''}</span>
+                  </div>
+                  <div class="flex justify-between items-center text-gray-200">
+                    <span class="${f.fighter_1.is_winner ? 'text-emerald-400 font-bold' : ''}">${f.fighter_1.name}</span>
+                    <span class="text-gray-500 text-[10px]">vs</span>
+                    <span class="${f.fighter_2.is_winner ? 'text-emerald-400 font-bold' : ''}">${f.fighter_2.name}</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      grid.innerHTML = html;
+    }
+
+    // Inicializar cargando el resumen
+    fetchCurrentTab();
+  </script>
+</body>
+</html>
+
