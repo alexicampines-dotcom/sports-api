@@ -1,15 +1,9 @@
 """
 Configuración general de la API Deportiva.
-Todos los valores sensibles se cargan desde variables de entorno (.env).
 """
-import os
-from typing import Dict
-from dotenv import load_dotenv
+from typing import Dict, Any
 
-# Carga el archivo .env si existe (ignorado en producción si las vars ya están definidas)
-load_dotenv()
-
-# ─── Servidor y Metadatos ─────────────────────────────────────────────────────
+# Configuración de Servidor y Metadatos
 API_TITLE = "API Deportiva Global (Top 5 Deportes)"
 API_DESCRIPTION = """
 API REST de alto rendimiento en FastAPI que centraliza resultados, marcadores en vivo y calendarios 
@@ -24,19 +18,10 @@ Todos los datos se obtienen en tiempo real con sistema de caché en memoria de a
 """
 API_VERSION = "1.0.0"
 
-# ─── Configuración desde Variables de Entorno ─────────────────────────────────
-# Si la variable no existe, usa el valor por defecto indicado
-CACHE_TTL_SECONDS: int = int(os.getenv("CACHE_TTL_SECONDS", "60"))
-HTTP_TIMEOUT: float = float(os.getenv("HTTP_TIMEOUT", "8.0"))
-ALLOWED_ORIGINS: list = os.getenv("ALLOWED_ORIGINS", "*").split(",")
-HOST: str = os.getenv("HOST", "0.0.0.0")
-PORT: int = int(os.getenv("PORT", "8000"))
-RELOAD: bool = os.getenv("RELOAD", "True").lower() == "true"
+# Tiempo de vida del caché en memoria (en segundos)
+CACHE_TTL_SECONDS = 60
 
-# ─── Constantes (no sensibles, no necesitan .env) ────────────────────────────
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) SportsDataHub/1.0"
-
-# ─── Mapeo de ligas de fútbol (Top 5 del mundo) ──────────────────────────────
+# Mapeo de ligas de fútbol (Top 5 del mundo)
 SOCCER_LEAGUES: Dict[str, Dict[str, str]] = {
     "premier_league": {
         "code": "eng.1",
@@ -70,7 +55,7 @@ SOCCER_LEAGUES: Dict[str, Dict[str, str]] = {
     },
 }
 
-# ─── URLs base de la API de ESPN (pública y gratuita) ────────────────────────
+# URLs base de la API de ESPN (pública y gratuita)
 ESPN_ENDPOINTS: Dict[str, str] = {
     "soccer": "https://site.api.espn.com/apis/site/v2/sports/soccer/{league_code}/scoreboard",
     "mlb": "https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard",
@@ -79,4 +64,7 @@ ESPN_ENDPOINTS: Dict[str, str] = {
     "nfl": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
 }
 
+# Configuración HTTP
+HTTP_TIMEOUT = 8.0
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) SportsDataHub/1.0"
 

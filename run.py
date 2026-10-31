@@ -14,12 +14,11 @@ if hasattr(sys.stdout, "reconfigure"):
         pass
 
 if __name__ == "__main__":
-    from app.config import HOST, PORT, RELOAD
+    print("=" * 60)
+    print("⚽ ⚾ 🥊 🏀 🏈 INICIANDO API DEPORTIVA (TOP 5 DEPORTES)")
+    print("Documentación Swagger UI: http://127.0.0.1:8000/docs")
+    print("Dashboard Web Deportivo:  http://127.0.0.1:8000/dashboard")
+    print("Resumen de API:           http://127.0.0.1:8000/api/v1/summary")
+    print("=" * 60)
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
 
-    print("=" * 60)
-    print("INICIANDO API DEPORTIVA (TOP 5 DEPORTES)")
-    print(f"Documentacion Swagger UI: http://127.0.0.1:{PORT}/docs")
-    print(f"Dashboard Web Deportivo:  http://127.0.0.1:{PORT}/dashboard")
-    print(f"Resumen de API:           http://127.0.0.1:{PORT}/api/v1/summary")
-    print("=" * 60)
-    uvicorn.run("app.main:app", host=HOST, port=PORT, reload=RELOAD)

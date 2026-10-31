@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.config import API_TITLE, API_DESCRIPTION, API_VERSION, ALLOWED_ORIGINS
+from app.config import API_TITLE, API_DESCRIPTION, API_VERSION
 from app.models.schemas import HealthResponse
 from app.services.espn_service import espn_service
 from app.routers import soccer, mlb, ufc, nba, nfl, summary
@@ -45,7 +45,7 @@ app = FastAPI(
 # Configuración de CORS para permitir peticiones desde cualquier frontend (React, Vue, Next.js, etc.)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
